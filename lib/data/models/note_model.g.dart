@@ -10,12 +10,18 @@ NoteModel _$NoteModelFromJson(Map<String, dynamic> json) => NoteModel(
   id: json['id'] as String?,
   title: json['title'] as String,
   content: json['content'] as String,
-  createdAt: json['created_at'] as String?,
+  createdAt: json['createdAt'] == null
+      ? null
+      : DateTime.parse(json['createdAt'] as String),
+  updatedAt: json['updatedAt'] == null
+      ? null
+      : DateTime.parse(json['updatedAt'] as String),
 );
 
 Map<String, dynamic> _$NoteModelToJson(NoteModel instance) => <String, dynamic>{
   'id': instance.id,
   'title': instance.title,
   'content': instance.content,
-  'created_at': instance.createdAt,
+  'createdAt': instance.createdAt?.toIso8601String(),
+  'updatedAt': instance.updatedAt?.toIso8601String(),
 };

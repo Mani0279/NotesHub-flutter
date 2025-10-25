@@ -29,6 +29,7 @@ class HomeScreen extends StatelessWidget {
             padding: const EdgeInsets.all(8.0),
             child: TextField(
               onChanged: controller.updateSearchQuery,
+              style: TextStyle(color: Colors.black),
               decoration: InputDecoration(
                 hintText: 'Search notes...',
                 prefixIcon: const Icon(Icons.search),

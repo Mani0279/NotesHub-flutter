@@ -13,7 +13,7 @@ class ApiProvider {
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> decoded = json.decode(response.body);
-        final List<dynamic> data = decoded['data'];  // Adjusted here
+        final List<dynamic> data = decoded['data'];
         return data.map((json) => NoteModel.fromJson(json)).toList();
       } else {
         throw Exception('Failed to load notes: ${response.statusCode}');
@@ -26,7 +26,6 @@ class ApiProvider {
       throw Exception('Error: $e');
     }
   }
-
 
   Future<NoteModel> createNote(NoteModel note) async {
     try {
@@ -46,6 +45,8 @@ class ApiProvider {
       }
     } on SocketException {
       throw Exception('No internet connection');
+    } on http.ClientException {
+      throw Exception('Network error');
     } catch (e) {
       throw Exception('Error: $e');
     }
@@ -62,12 +63,15 @@ class ApiProvider {
           .timeout(ApiConstants.timeout);
 
       if (response.statusCode == 200) {
-        return NoteModel.fromJson(json.decode(response.body));
+        final Map<String, dynamic> decoded = json.decode(response.body);
+        return NoteModel.fromJson(decoded['data']);  // Added ['data'] here
       } else {
         throw Exception('Failed to update note: ${response.statusCode}');
       }
     } on SocketException {
       throw Exception('No internet connection');
+    } on http.ClientException {
+      throw Exception('Network error');
     } catch (e) {
       throw Exception('Error: $e');
     }
@@ -84,6 +88,8 @@ class ApiProvider {
       }
     } on SocketException {
       throw Exception('No internet connection');
+    } on http.ClientException {
+      throw Exception('Network error');
     } catch (e) {
       throw Exception('Error: $e');
     }

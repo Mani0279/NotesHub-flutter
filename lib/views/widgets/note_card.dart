@@ -1,30 +1,35 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
-import 'package:intl/intl.dart';
 import '../../data/models/note_model.dart';
 
 class NoteCard extends StatelessWidget {
   final NoteModel note;
   final VoidCallback onTap;
-  final VoidCallback onDelete;
+  final VoidCallback? onDelete;
 
   const NoteCard({
     super.key,
     required this.note,
     required this.onTap,
-    required this.onDelete,
+    this.onDelete,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
       child: Slidable(
-        endActionPane: ActionPane(
+        enabled: onDelete != null,
+        endActionPane: onDelete != null
+            ? ActionPane(
           motion: const ScrollMotion(),
           children: [
             SlidableAction(
-              onPressed: (context) => onDelete(),
+              onPressed: (_) => onDelete?.call(),
               backgroundColor: Colors.red,
               foregroundColor: Colors.white,
               icon: Icons.delete,
@@ -32,71 +37,58 @@ class NoteCard extends StatelessWidget {
               borderRadius: BorderRadius.circular(12),
             ),
           ],
-        ),
-        child: Card(
-          child: InkWell(
-            onTap: onTap,
-            borderRadius: BorderRadius.circular(12),
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          note.title,
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      const Icon(
-                        Icons.arrow_forward_ios,
-                        size: 16,
-                        color: Colors.grey,
-                      ),
-                    ],
+        )
+            : null,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(12),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  note.title,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
                   ),
-                  const SizedBox(height: 8),
-                  Text(
-                    note.content,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey[600],
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  note.content,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey[600],
+                  ),
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Icon(
+                      Icons.access_time,
+                      size: 14,
+                      color: Colors.grey[500],
                     ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  if (note.createdAt != null) ...[
-                    const SizedBox(height: 8),
+                    const SizedBox(width: 4),
                     Text(
-                      _formatDate(note.createdAt!),
+                      note.formattedDate, // Use the formatted date helper
                       style: TextStyle(
                         fontSize: 12,
                         color: Colors.grey[500],
                       ),
                     ),
                   ],
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ),
       ),
     );
-  }
-
-  String _formatDate(String dateString) {
-    try {
-      final date = DateTime.parse(dateString);
-      return DateFormat('MMM dd, yyyy - hh:mm a').format(date);
-    } catch (e) {
-      return dateString;
-    }
   }
 }

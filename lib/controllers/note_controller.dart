@@ -17,7 +17,6 @@ class NoteController extends GetxController {
     fetchNotes();
   }
 
-  // This computed property for filtering is perfect, no changes needed.
   List<NoteModel> get filteredNotes {
     if (searchQuery.value.isEmpty) {
       return notes;
@@ -36,42 +35,56 @@ class NoteController extends GetxController {
       notes.value = fetchedNotes;
     } catch (e) {
       error.value = e.toString();
-      // Clear the list on error to avoid showing stale data.
       notes.value = [];
       Get.snackbar(
         'Error',
-        AppConstants.networkErrorMessage,
+        _getErrorMessage(e.toString()),
         snackPosition: SnackPosition.BOTTOM,
+        duration: const Duration(seconds: 3),
       );
     } finally {
       isLoading.value = false;
     }
   }
 
-  Future<void> createNote(String title, String content) async {
+  // Updated to accept NoteModel instead of individual parameters
+  Future<void> addNote(NoteModel note) async {
+    if (note.title.trim().isEmpty || note.content.trim().isEmpty) {
+      Get.snackbar(
+        'Validation Error',
+        'Title and content cannot be empty',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+      return;
+    }
+
     try {
       isLoading.value = true;
       error.value = '';
 
-      final newNote = NoteModel(title: title, content: content);
-      await _repository.createNote(newNote);
+      final createdNote = await _repository.createNote(note);
 
-      Get.back(); // Navigate back first
+      // Verify the created note has an ID
+      if (createdNote.id != null) {
+        Get.back(); // Navigate back after successful creation
+        await fetchNotes(); // Refresh the list
 
-      // Then fetch the updated list from the server.
-      await fetchNotes();
-
-      Get.snackbar(
-        'Success',
-        AppConstants.saveSuccessMessage,
-        snackPosition: SnackPosition.BOTTOM,
-      );
+        Get.snackbar(
+          'Success',
+          AppConstants.saveSuccessMessage,
+          snackPosition: SnackPosition.BOTTOM,
+          duration: const Duration(seconds: 2),
+        );
+      } else {
+        throw Exception('Created note has no ID');
+      }
     } catch (e) {
       error.value = e.toString();
       Get.snackbar(
         'Error',
-        AppConstants.errorMessage,
+        _getErrorMessage(e.toString()),
         snackPosition: SnackPosition.BOTTOM,
+        duration: const Duration(seconds: 3),
       );
     } finally {
       isLoading.value = false;
@@ -79,28 +92,48 @@ class NoteController extends GetxController {
   }
 
   Future<void> updateNote(NoteModel note) async {
+    // Validate that the note has an ID
+    if (note.id == null || note.id!.isEmpty) {
+      Get.snackbar(
+        'Error',
+        'Cannot update note without ID',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+      return;
+    }
+
+    // Validate content
+    if (note.title.trim().isEmpty || note.content.trim().isEmpty) {
+      Get.snackbar(
+        'Validation Error',
+        'Title and content cannot be empty',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+      return;
+    }
+
     try {
       isLoading.value = true;
       error.value = '';
 
       await _repository.updateNote(note);
 
-      Get.back(); // Navigate back first
-
-      // Then fetch the updated list from the server.
-      await fetchNotes();
+      Get.back(); // Navigate back after successful update
+      await fetchNotes(); // Refresh the list
 
       Get.snackbar(
         'Success',
-        AppConstants.saveSuccessMessage,
+        'Note updated successfully',
         snackPosition: SnackPosition.BOTTOM,
+        duration: const Duration(seconds: 2),
       );
     } catch (e) {
       error.value = e.toString();
       Get.snackbar(
         'Error',
-        AppConstants.errorMessage,
+        _getErrorMessage(e.toString()),
         snackPosition: SnackPosition.BOTTOM,
+        duration: const Duration(seconds: 3),
       );
     } finally {
       isLoading.value = false;
@@ -108,27 +141,35 @@ class NoteController extends GetxController {
   }
 
   Future<void> deleteNote(String id) async {
+    if (id.isEmpty) {
+      Get.snackbar(
+        'Error',
+        'Invalid note ID',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+      return;
+    }
+
     try {
-      isLoading.value = true; // Show loading indicator during delete
+      isLoading.value = true;
       error.value = '';
 
       await _repository.deleteNote(id);
-
-      // After successful deletion, just fetch the new list.
-      // The `notes.removeWhere` is no longer needed.
-      await fetchNotes();
+      await fetchNotes(); // Refresh the list after deletion
 
       Get.snackbar(
         'Success',
         AppConstants.deleteSuccessMessage,
         snackPosition: SnackPosition.BOTTOM,
+        duration: const Duration(seconds: 2),
       );
     } catch (e) {
       error.value = e.toString();
       Get.snackbar(
         'Error',
-        AppConstants.errorMessage,
+        _getErrorMessage(e.toString()),
         snackPosition: SnackPosition.BOTTOM,
+        duration: const Duration(seconds: 3),
       );
     } finally {
       isLoading.value = false;
@@ -137,5 +178,41 @@ class NoteController extends GetxController {
 
   void updateSearchQuery(String query) {
     searchQuery.value = query;
+  }
+
+  // Helper method to provide user-friendly error messages
+  String _getErrorMessage(String error) {
+    if (error.contains('No internet connection')) {
+      return 'No internet connection. Please check your network.';
+    } else if (error.contains('Network error')) {
+      return 'Network error. Please try again.';
+    } else if (error.contains('timeout')) {
+      return 'Request timeout. Please try again.';
+    } else if (error.contains('Failed to load notes')) {
+      return 'Failed to load notes. Please try again.';
+    } else if (error.contains('Failed to create note')) {
+      return 'Failed to create note. Please try again.';
+    } else if (error.contains('Failed to update note')) {
+      return 'Failed to update note. Please try again.';
+    } else if (error.contains('Failed to delete note')) {
+      return 'Failed to delete note. Please try again.';
+    }
+    return AppConstants.errorMessage;
+  }
+
+  // Optional: Add a method to clear error state
+  void clearError() {
+    error.value = '';
+  }
+
+  // Optional: Add a method to refresh without loading indicator
+  Future<void> silentRefresh() async {
+    try {
+      error.value = '';
+      final fetchedNotes = await _repository.getNotes();
+      notes.value = fetchedNotes;
+    } catch (e) {
+      error.value = e.toString();
+    }
   }
 }
