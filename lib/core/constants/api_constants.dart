@@ -1,5 +1,5 @@
 class ApiConstants {
-  static const String baseUrl = 'https://my-express-notes-app.onrender.com';
+  static const String baseUrl = 'http://ec2-18-61-62-208.ap-south-2.compute.amazonaws.com:3000';
   static const String notes = '/notes';
 
   static String get notesUrl => '$baseUrl$notes';
